@@ -52,7 +52,7 @@ saida:
 ted: saida $(OBJS) main.o
 	$(CC) $(CFLAGS) $(LDLIBS) -o $(PROJ_NAME) $(OBJS) main.o
 
-main.o: main.c geo.h qry.h forma.h vermelha.h svg.h
+main.o: main.c geo.h qry.h forma.h vermelha.h svg.h dot.h
 	$(CC) -c $(CFLAGS) $(INC) $< -o $@
 
 forma.o:      forma.c      forma.h
@@ -85,7 +85,7 @@ geo.o:        geo.c        geo.h     forma.h vermelha.h
 qry.o:        qry.c        qry.h     geo.h vermelha.h svg.h txt.h
 	$(CC) -c $(CFLAGS) $(INC) $< -o $@
 
-svg.o:        svg.c        svg.h     forma.h lista.h
+svg.o:        svg.c        svg.h     forma.h
 	$(CC) -c $(CFLAGS) $(INC) $< -o $@
 
 txt.o:        txt.c        txt.h     forma.h lista.h

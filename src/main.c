@@ -4,6 +4,7 @@
 
 #include "geo.h"
 #include "svg.h"
+#include "dot.h"
 #include "vermelha.h"
 
 /**
@@ -86,6 +87,13 @@ int main(int argc, char *argv[])
     }
 
     (void)arq_qry; /* consultas serao tratadas na etapa 7 */
+
+    /* arvore final: gera o .dot para visualizar a rubro-negra */
+    {
+        char nome_dot[1100];
+        snprintf(nome_dot, sizeof(nome_dot), "%s.dot", base);
+        dot_exporta(arvore, geo_get_id, caminho_saida(nome_dot));
+    }
 
     vermelha_destroi(arvore, (void (*)(void *))forma_destroi);
     return 0;
