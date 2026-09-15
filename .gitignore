@@ -1,0 +1,23 @@
+# Binarios e objetos
+*.o
+*.exe
+ted
+
+# Diretorio de saída gerado pelo 'make saida'
+output/
+
+# Editar .gitignore para NAO ignorar arquivos essenciais:
+# - LEIA-ME.txt (obrigatorio)
+# - README.md
+# - Arquivos .dot (entregaveis) na raiz
+
+# Arquivos de saida gerados pelo programa em output/ (ja cobertos acima)
+
+# Editor/OS
+.vscode/
+.idea/
+*.swp
+Thumbs.db
+
+# Logs
+*.log
