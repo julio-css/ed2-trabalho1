@@ -1,5 +1,3 @@
-
-
 #include "vermelha.h"
 
 #include <stdio.h>

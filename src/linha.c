@@ -1,5 +1,3 @@
-
-
 #include "linha.h"
 
 #include <math.h>

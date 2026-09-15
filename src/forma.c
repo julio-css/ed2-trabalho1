@@ -1,5 +1,3 @@
-
-
 #include "forma.h"
 
 #include <stdlib.h>

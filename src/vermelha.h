@@ -1,5 +1,3 @@
-
-
 #ifndef VERMELHA_H
 #define VERMELHA_H
 

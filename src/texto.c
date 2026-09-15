@@ -1,5 +1,3 @@
-
-
 #include "texto.h"
 
 Forma *texto_cria(int id, double x, double y,

@@ -1,4 +1,3 @@
-
 # ======================================================================
 # Pesca Pirata - Trabalho de Estrutura de Dados II (ED2 - 2026)
 # Makefile de compilacao do programa 'ted'

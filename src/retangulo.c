@@ -1,5 +1,3 @@
-
-
 #include "retangulo.h"
 
 #include <math.h>

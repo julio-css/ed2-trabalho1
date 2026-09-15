@@ -1,5 +1,3 @@
-
-
 #ifndef CIRCULO_H
 #define CIRCULO_H
 
