@@ -1,6 +1,6 @@
->>IMPLEMENTADOR: Julio Cesar da Silva Santos
->>DATA DE CRIAÇÃO: 15/09/26
->>LOCAL: U. Estadual de Londrina
+# >>IMPLEMENTADOR: Julio Cesar da Silva Santos
+# >>DATA DE CRIAÇÃO: 15/09/26
+# >>LOCAL: U. Estadual de Londrina
 
 # ======================================================================
 # Pesca Pirata - Trabalho de Estrutura de Dados II (ED2 - 2026)
