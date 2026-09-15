@@ -1,9 +1,3 @@
-/*
->>IMPLEMENTADOR: Julio Cesar da Silva Santos
->>DATA DE CRIAÇÃO: 15/09/26
->>LOCAL: U. Estadual de Londrina
-*/
-
 #ifndef VERMELHA_H
 #define VERMELHA_H
 

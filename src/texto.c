@@ -1,9 +1,3 @@
-/*
->>IMPLEMENTADOR: Julio Cesar da Silva Santos
->>DATA DE CRIAÇÃO: 15/09/26
->>LOCAL: U. Estadual de Londrina
-*/
-
 #include "texto.h"
 
 Forma *texto_cria(int id, double x, double y,

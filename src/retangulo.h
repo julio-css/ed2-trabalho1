@@ -1,9 +1,3 @@
-/*
->>IMPLEMENTADOR: Julio Cesar da Silva Santos
->>DATA DE CRIAÇÃO: 15/09/26
->>LOCAL: U. Estadual de Londrina
-*/
-
 #ifndef RETANGULO_H
 #define RETANGULO_H
 
