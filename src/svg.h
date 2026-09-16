@@ -55,6 +55,12 @@ void svg_desenha_forma(FILE *arq, const Forma *f);
  */
 void svg_desenha_tudo(FILE *arq, void *arvore);
 
+/**
+ * @brief Desenha as formas restantes no SVG final, aplicando as cores
+ *        de contorno das naus conforme o nivel final de energia.
+ */
+void svg_desenha_final(FILE *arq, void *arvore);
+
 /** @} */
 
 #endif /* SVG_H */

@@ -145,3 +145,67 @@ void svg_desenha_tudo(FILE *arq, void *arvore)
     }
     vermelha_em_ordem(arvore, visita, arq);
 }
+
+/**
+ * corContornoEnergia – devolve a cor e a largura do contorno da nau
+ * conforme o nivel final de energia (tabela do enunciado).
+ */
+static void corContornoEnergia(double e, const char **cor, double *larg)
+{
+    if (e <= 0.0)
+    {
+        *cor = "#484537";   /* energia 0.0 */
+        *larg = 2;
+    }
+    else if (e < 100.0)
+    {
+        *cor = "#FFCC00";   /* 0.0 < e < 100.0 */
+        *larg = 2;
+    }
+    else if (e < 250.0)
+    {
+        *cor = "#217821";   /* 100.0 <= e < 250.0 */
+        *larg = 2;
+    }
+    else
+    {
+        *cor = "#800066";   /* 250.0 <= e */
+        *larg = 3;
+    }
+}
+
+/**
+ * desenhaFormaFinal – desenha a forma no svg final, aplicando o
+ * contorno de energia nas naus (retangulos).
+ */
+static void desenhaFormaFinal(FILE *arq, const Forma *f)
+{
+    if (forma_get_tipo(f) == FORMA_RETANGULO)
+    {
+        const char *cor;
+        double larg;
+        double x  = converteX(forma_get_x(f));
+        double y  = converteY(forma_get_y(f));
+        double w  = forma_get_largura(f);
+        double h  = forma_get_altura(f);
+
+        corContornoEnergia(forma_get_energia(f), &cor, &larg);
+        fprintf(arq, "  <rect x=\"%g\" y=\"%g\" width=\"%g\" height=\"%g\" "
+                     "fill=\"%s\" stroke=\"%s\" stroke-width=\"%g\"/>\n",
+                x, y, w, h, forma_get_cor_preench(f), cor, larg);
+    }
+    else
+    {
+        svg_desenha_forma(arq, f);
+    }
+}
+
+void svg_desenha_final(FILE *arq, void *arvore)
+{
+    void visita(void *f, void *aux)
+    {
+        FILE *a = aux;
+        desenhaFormaFinal(a, (Forma *)f);
+    }
+    vermelha_em_ordem(arvore, visita, arq);
+}
