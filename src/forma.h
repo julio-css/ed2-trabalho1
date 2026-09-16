@@ -179,6 +179,26 @@ void forma_set_x(Forma *f, double x);
 void forma_set_y(Forma *f, double y);
 
 /**
+ * @brief Obtem a energia da nau (retangulo).
+ */
+double forma_get_energia(const Forma *f);
+
+/**
+ * @brief Obtem a riqueza acumulada pela nau (retangulo).
+ */
+double forma_get_riqueza(const Forma *f);
+
+/**
+ * @brief Define o nivel de energia da nau.
+ */
+void forma_set_energia(Forma *f, double energia);
+
+/**
+ * @brief Soma um valor a riqueza da nau.
+ */
+void forma_add_riqueza(Forma *f, double valor);
+
+/**
  * @brief Calcula a area da forma.
  *
  * Circulo: pi * r^2. Retangulo: w * h. Linha e texto: 0.

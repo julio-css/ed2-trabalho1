@@ -65,6 +65,8 @@ struct Forma
     double y;
     char cor_borda[FORMA_MAX_COR];
     char cor_preench[FORMA_MAX_COR];
+    double energia; /* nivel de energia da nau (retangulo) */
+    double riqueza; /* riqueza acumulada da nau (retangulo) */
     TipoForma tipo;
     union
     {
@@ -117,6 +119,8 @@ Forma *forma_cria_circulo(int id, double x, double y, double r,
     copia_string(f->cor_borda, FORMA_MAX_COR, corb);
     copia_string(f->cor_preench, FORMA_MAX_COR, corp);
     f->dados.circulo.raio = r;
+    f->energia = 0.0;
+    f->riqueza = 0.0;
 
     return f;
 }
@@ -136,6 +140,8 @@ Forma *forma_cria_retangulo(int id, double x, double y, double w, double h,
     copia_string(f->cor_preench, FORMA_MAX_COR, corp);
     f->dados.retangulo.largura = w;
     f->dados.retangulo.altura = h;
+    f->energia = 0.0;
+    f->riqueza = 0.0;
 
     return f;
 }
@@ -151,6 +157,8 @@ Forma *forma_cria_linha(int id, double x1, double y1, double x2, double y2,
     f->tipo = FORMA_LINHA;
     copia_string(f->cor_borda, FORMA_MAX_COR, cor);
     copia_string(f->cor_preench, FORMA_MAX_COR, "");
+    f->energia = 0.0;
+    f->riqueza = 0.0;
 
     /* ancora = extremidade com menor X (menor Y em empate) */
     if ((x1 < x2) || (fabs(x1 - x2) < 1e-9 && y1 <= y2))
@@ -187,6 +195,8 @@ Forma *forma_cria_texto(int id, double x, double y,
     copia_string(f->cor_preench, FORMA_MAX_COR, corp);
     f->dados.texto.ancora = a;
     copia_string(f->dados.texto.texto, FORMA_MAX_TEXTO, texto);
+    f->energia = 0.0;
+    f->riqueza = 0.0;
 
     return f;
 }
@@ -281,6 +291,26 @@ void forma_set_x(Forma *f, double x)
 void forma_set_y(Forma *f, double y)
 {
     f->y = y;
+}
+
+double forma_get_energia(const Forma *f)
+{
+    return f->energia;
+}
+
+double forma_get_riqueza(const Forma *f)
+{
+    return f->riqueza;
+}
+
+void forma_set_energia(Forma *f, double energia)
+{
+    f->energia = energia;
+}
+
+void forma_add_riqueza(Forma *f, double valor)
+{
+    f->riqueza += valor;
 }
 
 /*
