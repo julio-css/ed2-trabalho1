@@ -5,6 +5,7 @@
 #include "geo.h"
 #include "svg.h"
 #include "dot.h"
+#include "txt.h"
 #include "vermelha.h"
 
 /**
@@ -72,7 +73,7 @@ int main(int argc, char *argv[])
     if (dot)
         *dot = '\0';
 
-    /* gera o arq.svg inicial com todas as formas */
+    /* gera o arq.svg: inicial (sem .qry) ou final com contornos por energia */
     char nome_svg[1100];
     snprintf(nome_svg, sizeof(nome_svg), "%s.svg", base);
     FILE *arq = fopen(caminho_saida(nome_svg), "w");
@@ -81,12 +82,28 @@ int main(int argc, char *argv[])
         double larg, alt;
         svg_calcula_dimensoes(arvore, &larg, &alt);
         svg_abre(arq, larg, alt);
-        svg_desenha_tudo(arq, arvore);
+        if (arq_qry[0] != '\0')
+            svg_desenha_final(arq, arvore);
+        else
+            svg_desenha_tudo(arq, arvore);
         svg_fecha(arq);
         fclose(arq);
     }
 
-    (void)arq_qry; /* consultas serao tratadas na etapa 7 */
+    /* consultas serao aplicadas na etapa 7 */
+
+    /* contabilidade final das naus (txt) quando ha .qry */
+    if (arq_qry[0] != '\0')
+    {
+        char nome_txt[1100];
+        snprintf(nome_txt, sizeof(nome_txt), "%s.txt", base);
+        FILE *txt = fopen(caminho_saida(nome_txt), "w");
+        if (txt != NULL)
+        {
+            txt_escreve_final(txt, arvore);
+            fclose(txt);
+        }
+    }
 
     /* arvore final: gera o .dot para visualizar a rubro-negra */
     {
