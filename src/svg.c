@@ -209,3 +209,42 @@ void svg_desenha_final(FILE *arq, void *arvore)
     }
     vermelha_em_ordem(arvore, visita, arq);
 }
+
+void svg_desenha_regiao(FILE *arq, double x1, double y1,
+                        double x2, double y2)
+{
+    fprintf(arq, "  <rect x=\"%g\" y=\"%g\" width=\"%g\" height=\"%g\" "
+                 "fill=\"none\" stroke=\"black\" stroke-width=\"1\" "
+                 "stroke-dasharray=\"4 4\"/>\n",
+            converteX(x1), converteY(y1), x2 - x1, y2 - y1);
+}
+
+void svg_desenha_marcador(FILE *arq, double x, double y, char tipo)
+{
+    double cx = converteX(x);
+    double cy = converteY(y);
+
+    switch (tipo)
+    {
+        case '*':   /* asterisco (impacto do canhao) */
+            fprintf(arq, "  <text x=\"%g\" y=\"%g\" fill=\"black\" "
+                         "font-size=\"14\">*</text>\n", cx, cy);
+            break;
+        case 'x':   /* cruz (nau destruida) */
+            fprintf(arq, "  <text x=\"%g\" y=\"%g\" fill=\"black\" "
+                         "font-size=\"14\">x</text>\n", cx, cy);
+            break;
+        case 'o':   /* circulo amarelo (rede sem energia) */
+            fprintf(arq, "  <circle cx=\"%g\" cy=\"%g\" r=\"4\" "
+                         "fill=\"none\" stroke=\"yellow\" "
+                         "stroke-width=\"2\"/>\n", cx, cy);
+            break;
+        case 'q':   /* quadrado amarelo (canhao sem energia) */
+            fprintf(arq, "  <rect x=\"%g\" y=\"%g\" width=\"8\" height=\"8\" "
+                         "fill=\"none\" stroke=\"yellow\" "
+                         "stroke-width=\"2\"/>\n", cx - 4, cy - 4);
+            break;
+        default:
+            break;
+    }
+}
