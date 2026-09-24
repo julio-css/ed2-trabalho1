@@ -61,6 +61,27 @@ void svg_desenha_tudo(FILE *arq, void *arvore);
  */
 void svg_desenha_final(FILE *arq, void *arvore);
 
+/**
+ * @brief Desenha um retangulo com bordas tracejadas (regiao da rede,
+ *        regioes de origem/destino de mc).
+ *
+ * @param arq   Arquivo aberto.
+ * @param x1,y1 Canto inferior esquerdo da regiao (plano do .geo).
+ * @param x2,y2 Canto superior direito da regiao.
+ */
+void svg_desenha_regiao(FILE *arq, double x1, double y1,
+                        double x2, double y2);
+
+/**
+ * @brief Desenha um marcador pontual no plano do .geo.
+ *
+ * @param tipo '*' asterisco (ponto de impacto);
+ *             'x' cruz (nau destruida);
+ *             'o' circulo amarelo (rede sem energia);
+ *             'q' quadrado amarelo (canhao sem energia).
+ */
+void svg_desenha_marcador(FILE *arq, double x, double y, char tipo);
+
 /** @} */
 
 #endif /* SVG_H */
