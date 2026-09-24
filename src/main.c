@@ -7,6 +7,8 @@
 #include "dot.h"
 #include "txt.h"
 #include "vermelha.h"
+#include "forma.h"
+#include "qry.h"
 
 /**
  * Diretorio onde estao os arquivos de entrada (BED) e de saida (BSD).
@@ -30,6 +32,27 @@ static const char *caminho_saida(const char *nome)
     return buf;
 }
 
+/**
+ * soNome — grava em 'saida' o nome-base de 'nome': sem path
+ * (aceita separadores '/' ou '\\') e sem extensao.
+ * Ex.: ".\\testes\\t001.geo" -> "t001".
+ */
+static void soNome(const char *nome, char *saida, size_t tam)
+{
+    snprintf(saida, tam, "%s", nome);
+
+    char *sep = strrchr(saida, '/');
+    char *barra = strrchr(saida, '\\');
+    if (barra != NULL && (sep == NULL || barra > sep))
+        sep = barra;
+    if (sep != NULL)
+        memmove(saida, sep + 1, strlen(sep));
+
+    char *pd = strrchr(saida, '.');
+    if (pd != NULL)
+        *pd = '\0';
+}
+
 int main(int argc, char *argv[])
 {
     int i;
@@ -51,7 +74,7 @@ int main(int argc, char *argv[])
         return 1;
     }
 
-    /* arvore Rubro-Negra com chamadas passadas */
+    /* arvore Rubro-Negra com as chamadas passadas */
     void *arvore = vermelha_cria(geo_compara_forma, geo_get_mbb);
     if (arvore == NULL)
         return 1;
@@ -66,42 +89,66 @@ int main(int argc, char *argv[])
     geo_processa_arquivo(geo, arvore);
     fclose(geo);
 
-    /* nome base sem extensao (arq.geo -> arq) */
-    char base[512];
-    strcpy(base, arq_geo);
-    char *dot = strrchr(base, '.');
-    if (dot)
-        *dot = '\0';
+    char base[512], base_qry[512];
+    soNome(arq_geo, base, sizeof(base));
 
-    /* gera o arq.svg: inicial (sem .qry) ou final com contornos por energia */
-    char nome_svg[1100];
-    snprintf(nome_svg, sizeof(nome_svg), "%s.svg", base);
-    FILE *arq = fopen(caminho_saida(nome_svg), "w");
-    if (arq != NULL)
+    /* arq.svg: estado inicial, antes de qualquer consulta */
     {
-        double larg, alt;
-        svg_calcula_dimensoes(arvore, &larg, &alt);
-        svg_abre(arq, larg, alt);
-        if (arq_qry[0] != '\0')
-            svg_desenha_final(arq, arvore);
-        else
+        char nome_svg[1100];
+        snprintf(nome_svg, sizeof(nome_svg), "%s.svg", base);
+        FILE *arq = fopen(caminho_saida(nome_svg), "w");
+        if (arq != NULL)
+        {
+            double larg, alt;
+            svg_calcula_dimensoes(arvore, &larg, &alt);
+            svg_abre(arq, larg, alt);
             svg_desenha_tudo(arq, arvore);
-        svg_fecha(arq);
-        fclose(arq);
+            svg_fecha(arq);
+            fclose(arq);
+        }
     }
 
-    /* consultas serao aplicadas na etapa 7 */
+    Lista *anotacoes = NULL;
 
-    /* contabilidade final das naus (txt) quando ha .qry */
     if (arq_qry[0] != '\0')
     {
-        char nome_txt[1100];
-        snprintf(nome_txt, sizeof(nome_txt), "%s.txt", base);
-        FILE *txt = fopen(caminho_saida(nome_txt), "w");
-        if (txt != NULL)
+        FILE *qry = fopen(caminho_entrada(arq_qry), "r");
+        if (qry == NULL)
         {
-            txt_escreve_final(txt, arvore);
-            fclose(txt);
+            fprintf(stderr, "erro: nao achei %s\n", caminho_entrada(arq_qry));
+            return 1;
+        }
+        soNome(arq_qry, base_qry, sizeof(base_qry));
+
+        /* base-baseqry.txt: resultados das consultas + contabilidade final */
+        {
+            char nome_txt[1100];
+            snprintf(nome_txt, sizeof(nome_txt), "%s-%s.txt", base, base_qry);
+            FILE *txt = fopen(caminho_saida(nome_txt), "w");
+            if (txt != NULL)
+            {
+                anotacoes = qry_processa(qry, arvore, txt);
+                txt_escreve_final(txt, arvore);
+                fclose(txt);
+            }
+        }
+        fclose(qry);
+
+        /* base-baseqry.svg: estado final + contornos de energia + anotacoes */
+        {
+            char nome_svg[1100];
+            snprintf(nome_svg, sizeof(nome_svg), "%s-%s.svg", base, base_qry);
+            FILE *sq = fopen(caminho_saida(nome_svg), "w");
+            if (sq != NULL)
+            {
+                double larg, alt;
+                svg_calcula_dimensoes(arvore, &larg, &alt);
+                svg_abre(sq, larg, alt);
+                svg_desenha_final(sq, arvore);
+                qry_desenha_anotacoes(sq, anotacoes);
+                svg_fecha(sq);
+                fclose(sq);
+            }
         }
     }
 
@@ -112,6 +159,7 @@ int main(int argc, char *argv[])
         dot_exporta(arvore, geo_get_id, caminho_saida(nome_dot));
     }
 
+    qry_libera_anotacoes(anotacoes);
     vermelha_destroi(arvore, (void (*)(void *))forma_destroi);
     return 0;
 }
