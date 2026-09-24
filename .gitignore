@@ -24,7 +24,7 @@ Thumbs.db
 
 # Temporarios gerados por testes / depuração
 src/dbg_*.dot
-tmp_*.geo
+tmp_*
 
 # Enunciado (PDF) — nao parte do codigo
 *.pdf
