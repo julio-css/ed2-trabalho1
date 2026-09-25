@@ -160,9 +160,9 @@ void test_lr_captura_valores_e_remove(void)
     TEST_ASSERT_EQUAL_INT(1, vermelha_tamanho(arvore));
     Forma *nau = busca(1);
     TEST_ASSERT_NOT_NULL(nau);
-    /* custo = (20*20)/25 + 10/5 = 16 + 2 = 18;
-       energia = 100 - 18 + 2.5 (moeda) = 84.5 */
-    TEST_ASSERT_DOUBLE_WITHIN(1e-6, 84.5, forma_get_energia(nau));
+    /* custo = (20*20)/25 * (10/5) = 16 * 2 = 32;
+       energia = 100 - 32 + 2.5 (moeda) = 70.5 */
+    TEST_ASSERT_DOUBLE_WITHIN(1e-6, 70.5, forma_get_energia(nau));
     /* riqueza = 20 (lagosta) + 5 (peixe) = 25 */
     TEST_ASSERT_DOUBLE_WITHIN(1e-6, 25.0, forma_get_riqueza(nau));
     TEST_ASSERT_NULL(busca(2));
