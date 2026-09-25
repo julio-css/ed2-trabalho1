@@ -1,0 +1,10 @@
+[*] e 1 2 100
+naus energizadas entre 1 e 2: 2
+[*] mv 1 50 20
+forma 1 movida de (0.000, 0.000) para (50.000, 20.000)
+custo de energia: 10.770
+[*] d 2 BB 80
+ponto de impacto em (310.000, 120.000)
+energia antes: 100.000 energia depois: 20.000
+nau 1: riqueza 0.00 energia 89.23
+nau 2: riqueza 0.00 energia 20.00

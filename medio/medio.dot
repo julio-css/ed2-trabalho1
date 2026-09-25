@@ -1,0 +1,12 @@
+digraph ArvoreRubroNegra {
+  node [shape=circle, style=filled, fillcolor=white];
+  n11 [label="11", color=black, fontcolor=black];
+  n11 -> n2;
+  n2 [label="2", color=red, fontcolor=red];
+  n2 -> n1;
+  n1 [label="1", color=black, fontcolor=black];
+  n2 -> n10;
+  n10 [label="10", color=black, fontcolor=black];
+  n11 -> n20;
+  n20 [label="20", color=black, fontcolor=black];
+}
