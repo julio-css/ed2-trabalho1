@@ -1,7 +1,0 @@
-# teste complexo — exercita e, mv, lr, d, mc e caso sem energia
-e 1 2 120
-mv 1 50 0
-lr 1 PP 5 40 20
-d 2 PR 120
-mc 30 10 100 50 120 80
-lr 2 BB 100 50 30
