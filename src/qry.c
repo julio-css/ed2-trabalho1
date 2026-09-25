@@ -445,7 +445,7 @@ static void executaLr(ComandoQry *q, void *arvore, FILE *txt, Lista *anot)
         return;
     }
 
-    double custo = (q->w * q->h) / 25.0 + q->d / 5.0;
+    double custo = ((q->w * q->h) / 25.0) * (q->d / 5.0);
     double energia_inicial = forma_get_energia(nau);
 
     if (energia_inicial < custo)
