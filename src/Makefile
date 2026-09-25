@@ -42,7 +42,7 @@ OBJS = forma.o   \
 
 # --- executavel principal ---
 ted: $(OBJS) main.o
-	$(CC) $(CFLAGS) $(LDLIBS) -o $(PROJ_NAME) $(OBJS) main.o
+	$(CC) $(CFLAGS) -o $(PROJ_NAME) $(OBJS) main.o $(LDLIBS)
 
 main.o: main.c geo.h qry.h forma.h vermelha.h svg.h dot.h
 	$(CC) -c $(CFLAGS) $(INC) $< -o $@
@@ -89,29 +89,29 @@ dot.o:        dot.c        dot.h     vermelha.h forma.h
 # --- testes unitarios (Unity) ---
 
 $(TST)/t_lista: $(TST)/t_lista.c lista.c $(UNITY)/unity.c
-	$(CC) $(CFLAGS) $(INC) $(UNITY)/unity.c lista.c $(TST)/t_lista.c -o $@
+	$(CC) $(CFLAGS) $(INC) $(UNITY)/unity.c lista.c $(TST)/t_lista.c -o $@ $(LDLIBS)
 
 $(TST)/t_fila: $(TST)/t_fila.c fila.c $(UNITY)/unity.c
-	$(CC) $(CFLAGS) $(INC) $(UNITY)/unity.c fila.c $(TST)/t_fila.c -o $@
+	$(CC) $(CFLAGS) $(INC) $(UNITY)/unity.c fila.c $(TST)/t_fila.c -o $@ $(LDLIBS)
 
 $(TST)/t_forma: $(TST)/t_forma.c forma.c retangulo.c circulo.c linha.c texto.c $(UNITY)/unity.c
 	$(CC) $(CFLAGS) $(INC) -DUNITY_INCLUDE_DOUBLE \
-	$(UNITY)/unity.c forma.c retangulo.c circulo.c linha.c texto.c $(TST)/t_forma.c -o $@
+	$(UNITY)/unity.c forma.c retangulo.c circulo.c linha.c texto.c $(TST)/t_forma.c -o $@ $(LDLIBS)
 
 $(TST)/t_vermelha: $(TST)/t_vermelha.c vermelha.c forma.c retangulo.c circulo.c linha.c texto.c $(UNITY)/unity.c
 	$(CC) $(CFLAGS) $(INC) -DUNITY_INCLUDE_DOUBLE \
 	$(UNITY)/unity.c vermelha.c forma.c retangulo.c circulo.c linha.c texto.c \
-	$(TST)/t_vermelha.c -o $@
+	$(TST)/t_vermelha.c -o $@ $(LDLIBS)
 
 $(TST)/t_geo: $(TST)/t_geo.c geo.c forma.c retangulo.c circulo.c linha.c texto.c vermelha.c $(UNITY)/unity.c
 	$(CC) $(CFLAGS) $(INC) -DUNITY_INCLUDE_DOUBLE \
 	$(UNITY)/unity.c geo.c forma.c retangulo.c circulo.c linha.c texto.c vermelha.c \
-	$(TST)/t_geo.c -o $@
+	$(TST)/t_geo.c -o $@ $(LDLIBS)
 
 $(TST)/t_qry: $(TST)/t_qry.c qry.c geo.c forma.c retangulo.c circulo.c linha.c texto.c vermelha.c svg.c txt.c dot.c lista.c fila.c $(UNITY)/unity.c
 	$(CC) $(CFLAGS) $(INC) -DUNITY_INCLUDE_DOUBLE \
 	$(UNITY)/unity.c qry.c geo.c forma.c retangulo.c circulo.c linha.c texto.c vermelha.c \
-	svg.c txt.c dot.c lista.c fila.c $(TST)/t_qry.c -o $@
+	svg.c txt.c dot.c lista.c fila.c $(TST)/t_qry.c -o $@ $(LDLIBS)
 
 # --- execucao dos testes ---
 tst_lista:     $(TST)/t_lista     ; ./$(TST)/t_lista
