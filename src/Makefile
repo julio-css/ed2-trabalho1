@@ -3,7 +3,6 @@
 # Makefile de compilacao do programa 'ted'
 #
 # Uso:
-#   make saida     cria o diretorio ../output (obrigatorio pelo enunciado)
 #   make ted       compila o executavel principal
 #   make tst_*     compila e roda um teste unitario (ex.: make tst_vermelha)
 #   make tstall    compila e roda todos os testes unitarios
@@ -24,7 +23,6 @@ PROJ_NAME = ted
 SRC   = .
 TST   = ../tst
 UNITY = ../unity
-OUT   = ../output
 INC   = -I$(SRC) -I$(UNITY)
 
 # --- modulos (ordem de link) ---
@@ -42,14 +40,8 @@ OBJS = forma.o   \
        txt.o     \
        dot.o
 
-# --- target 'saida': cria ./output no mesmo nivel de src (../output) ---
-.PHONY: saida
-saida:
-	@mkdir -p $(OUT)
-	@echo "Diretorio de saida criado: $(OUT)"
-
 # --- executavel principal ---
-ted: saida $(OBJS) main.o
+ted: $(OBJS) main.o
 	$(CC) $(CFLAGS) $(LDLIBS) -o $(PROJ_NAME) $(OBJS) main.o
 
 main.o: main.c geo.h qry.h forma.h vermelha.h svg.h dot.h
@@ -137,5 +129,5 @@ clean:
 	rm -f $(TST)/t_lista $(TST)/t_fila $(TST)/t_forma $(TST)/t_vermelha \
 	      $(TST)/t_geo $(TST)/t_qry
 
-.PHONY: saida ted clean tstall \
+.PHONY: ted clean tstall \
         tst_lista tst_fila tst_forma tst_vermelha tst_geo tst_qry
