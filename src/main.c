@@ -33,6 +33,18 @@ static const char *caminho_saida(const char *nome)
 }
 
 /**
+ * tiraBarraFinal — remove uma barra '/' ou '\\' ao final de um path
+ * para evitar "dir//arquivo" quando o usuario passa "-e dir/".
+ * Mantem intacto a raiz ("/", "C:\\").
+ */
+static void tiraBarraFinal(char *s)
+{
+    size_t n = strlen(s);
+    if (n > 1 && (s[n - 1] == '/' || s[n - 1] == '\\'))
+        s[n - 1] = '\0';
+}
+
+/**
  * soNome — grava em 'saida' o nome-base de 'nome': sem path
  * (aceita separadores '/' ou '\\') e sem extensao.
  * Ex.: ".\\testes\\t001.geo" -> "t001".
@@ -67,6 +79,9 @@ int main(int argc, char *argv[])
         else if (strcmp(argv[i], "-q") == 0 && i + 1 < argc)
             strcpy(arq_qry, argv[++i]);
     }
+
+    tiraBarraFinal(bed);
+    tiraBarraFinal(bsd);
 
     if (arq_geo[0] == '\0' || bsd[0] == '\0')
     {
@@ -105,6 +120,19 @@ int main(int argc, char *argv[])
             svg_desenha_tudo(arq, arvore);
             svg_fecha(arq);
             fclose(arq);
+        }
+    }
+
+    /* sem .qry: gera tambem o base.txt com a contabilidade final */
+    if (arq_qry[0] == '\0')
+    {
+        char nome_txt[1100];
+        snprintf(nome_txt, sizeof(nome_txt), "%s.txt", base);
+        FILE *txt = fopen(caminho_saida(nome_txt), "w");
+        if (txt != NULL)
+        {
+            txt_escreve_final(txt, arvore);
+            fclose(txt);
         }
     }
 
