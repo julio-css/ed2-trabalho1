@@ -82,6 +82,30 @@ void svg_desenha_regiao(FILE *arq, double x1, double y1,
  */
 void svg_desenha_marcador(FILE *arq, double x, double y, char tipo);
 
+/**
+ * @brief Desenha a trilha de um comando (mv/lr/d/mc).
+ *
+ * Segmento tracejado de (x1,y1) a (x2,y2), o rotulo centralizado e tres
+ * aneis concentricos (r=1 vermelho, r=2 amarelo, r=3 vermelho) em cada uma
+ * das duas pontas.
+ *
+ * @param rotulo     Texto sobre a trilha; NULL ou "" desenha sem rotulo.
+ * @param tracejado  padrao do tracejado: o 'mv' usa "1", os demais "1.5".
+ */
+void svg_desenha_trilha(FILE *arq, double x1, double y1, double x2, double y2,
+                        const char *rotulo, const char *tracejado);
+
+/**
+ * @brief Desenha a estrela de 12 pontas no ponto de impacto do canhao.
+ */
+void svg_desenha_estrela(FILE *arq, double x, double y);
+
+/**
+ * @brief Desenha a regiao da rede lancada (lr) como retangulo tracejado
+ *        vermelho com preenchimento translucido.
+ */
+void svg_desenha_rede(FILE *arq, double x1, double y1, double x2, double y2);
+
 /** @} */
 
 #endif /* SVG_H */
