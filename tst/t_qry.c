@@ -147,16 +147,17 @@ void test_lr_captura_valores_e_remove(void)
 {
     carregaGeo(
         "r 1 0 0 100 50 black white\n"
-        "c 2 5 -20 3 red blue\n"           /* peixe na rede (M$5) */
-        "t 3 10 -20 black white i $\n"     /* moeda (energia +2.5) */
-        "t 4 15 -20 black white i >-|-<\n" /* lagosta (M$20) */
-        "t 5 18 -20 black white i alga\n");/* alga (M$0) */
+        "c 2 5 -5 3 red blue\n"            /* peixe na rede (M$5) */
+        "t 3 10 -5 black white i $\n"      /* moeda (energia +2.5) */
+        "t 4 15 -5 black white i >-|-<\n"  /* lagosta (M$20) */
+        "t 5 18 -5 black white i alga\n"); /* alga (M$0) */
     Lista *anot = rodaQry("e 1 1 100\nlr 1 PP 10 20 20\n");
     if (anot != NULL)
         qry_libera_anotacoes(anot);
 
-    /* rede: x in [0,20], y in [-30,-10]; captura peixe, moeda, lagosta,
-       alga. Nau 1 permanece. */
+    /* rede: a borda de lancamento fica a 'dist' da nau e a rede cresce de
+       volta em direcao a ela -- x in [0,20], y in [-10,10]. Captura peixe,
+       moeda, lagosta e alga. Nau 1 permanece. */
     TEST_ASSERT_EQUAL_INT(1, vermelha_tamanho(arvore));
     Forma *nau = busca(1);
     TEST_ASSERT_NOT_NULL(nau);
