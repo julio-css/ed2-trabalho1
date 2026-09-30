@@ -22,8 +22,13 @@
 typedef struct
 {
     char   tipo;           /* 'R' regiao, '*' impacto, 'x' nau destruida,
-                              'o' circulo amarelo, 'q' quadrado amarelo */
+                              'o' circulo amarelo, 'q' quadrado amarelo,
+                              'T' trilha (mv/lr/d) com aneis nas pontas,
+                              'D' retangulo tracejado da rede lancada,
+                              'P' estrela de impacto do canhao */
     double x1, y1, x2, y2; /* coordenadas no plano (antes da conversao) */
+    char   rotulo[64];     /* texto ao lado da trilha (vazio = sem rotulo) */
+    char   tracejado[8];   /* tracejado do segmento: "1" no mv, "1.5" nos demais */
 } AnotacaoSvg;
 
 /** Comando decodificado de uma linha do .qry (linha original preservada). */
@@ -76,7 +81,6 @@ typedef struct
     int    nai_id;         /* nau atiradora (nunca atingida) */
     int    menorId;        /* -1 se nenhuma nau atingida */
     double menorDist;
-    double impactox, impactoy;
 } ContextoCanhao;
 
 /** Contexto da energizacao (e). */
@@ -100,7 +104,12 @@ static int caixasIntersectam(double a1, double b1, double a2, double b2,
     return !(a2 < c1 || c2 < a1 || b2 < d1 || d2 < b1);
 }
 
-/** caixa onde cai a rede lancada da nau, do lado, a distancia dist. */
+/** caixa onde cai a rede lancada da nau, do lado, a distancia dist.
+ *
+ *  dist e a distancia da Borda de LANCAMENTO ate a borda da rede (a mais
+ *  proxima da nau). Nos quatro lados a rede cresce para dentro, em direcao
+ *  a nau -- inclusive em PP e EB, onde ela volta a "cobrir" a propria nau.
+ */
 static void regiaoDaRede(const Forma *nau, const char *lado, double dist,
                          double w, double h, Regiao *r)
 {
@@ -112,7 +121,7 @@ static void regiaoDaRede(const Forma *nau, const char *lado, double dist,
     if (strcmp(lado, "PP") == 0)
     {
         r->x1 = nx;             r->x2 = nx + w;
-        r->y1 = ny - dist - h;  r->y2 = ny - dist;
+        r->y1 = ny - dist;      r->y2 = ny - dist + h;
     }
     else if (strcmp(lado, "PR") == 0)
     {
@@ -121,7 +130,7 @@ static void regiaoDaRede(const Forma *nau, const char *lado, double dist,
     }
     else if (strcmp(lado, "EB") == 0)
     {
-        r->x1 = nx - dist - w;  r->x2 = nx - dist;
+        r->x1 = nx - dist;      r->x2 = nx - dist + w;
         r->y1 = ny;             r->y2 = ny + h;
     }
     else /* BB */
@@ -153,7 +162,42 @@ static AnotacaoSvg *novaAnotacao(char tipo, double x1, double y1,
         return NULL;
     a->tipo = tipo;
     a->x1 = x1; a->y1 = y1; a->x2 = x2; a->y2 = y2;
+    a->rotulo[0] = '\0';
+    snprintf(a->tracejado, sizeof(a->tracejado), "1.5");
     return a;
+}
+
+/**
+ * anotaTrilha – registra a "trilha" de um comando: o segmento ligando as duas
+ * pontas, o rotulo no meio e os tres aneis concentricos (r=1 vermelho,
+ * r=2 amarelo, r=3 vermelho) em cada ponta.
+ *
+ * @param tracejado "1" no mv, "1.5" em lr, d e mc.
+ */
+static void anotaTrilha(Lista *anot, double x1, double y1, double x2,
+                        double y2, const char *rotulo, const char *tracejado)
+{
+    AnotacaoSvg *a = novaAnotacao('T', x1, y1, x2, y2);
+    if (a == NULL)
+        return;
+
+    if (rotulo != NULL)
+        snprintf(a->rotulo, sizeof(a->rotulo), "%s", rotulo);
+
+    snprintf(a->tracejado, sizeof(a->tracejado), "%s", tracejado);
+    lista_insere(anot, a);
+}
+
+/**
+ * ancoraDaRede – ponto onde a trilha da rede termina. E sempre a coluna x1
+ * da regiao; na linha, y1 exceto no PP, onde a rede e lancada para cima e a
+ * trilha sobe ate y2.
+ */
+static void ancoraDaRede(const Regiao *r, const char *lado,
+                         double *ax, double *ay)
+{
+    *ax = r->x1;
+    *ay = (lado[0] == 'P' && lado[1] == 'P') ? r->y2 : r->y1;
 }
 
 /*
@@ -161,7 +205,6 @@ static AnotacaoSvg *novaAnotacao(char tipo, double x1, double y1,
  * CAPTURA DA REDE (lr) — busca por regiao com poda
  * ============================================================
  */
-
 static int mbbIntersecta(double mx1, double my1, double mx2, double my2,
                          void *ctx)
 {
@@ -317,17 +360,6 @@ static void avaliaNauNoRaio(void *dado, void *aux)
     {
         c->menorId = forma_get_id(f);
         c->menorDist = dist;
-        double len = hypot(c->rx2 - c->rx1, c->ry2 - c->ry1);
-        if (len > 0)
-        {
-            c->impactox = c->rx1 + (c->rx2 - c->rx1) * (dist / len);
-            c->impactoy = c->ry1 + (c->ry2 - c->ry1) * (dist / len);
-        }
-        else
-        {
-            c->impactox = c->rx1;
-            c->impactoy = c->ry1;
-        }
     }
 }
 
@@ -393,7 +425,7 @@ static void executaE(ComandoQry *q, void *arvore, FILE *txt)
                 ce.i, ce.j, ce.n);
 }
 
-static void executaMv(ComandoQry *q, void *arvore, FILE *txt)
+static void executaMv(ComandoQry *q, void *arvore, FILE *txt, Lista *anot)
 {
     Forma *f = vermelha_busca_por_id(arvore, q->i, geo_get_id);
     if (f == NULL)
@@ -406,18 +438,29 @@ static void executaMv(ComandoQry *q, void *arvore, FILE *txt)
     double x0 = forma_get_x(f), y0 = forma_get_y(f);
     double dist = sqrt(q->dx * q->dx + q->dy * q->dy);
     double custo = dist / 5.0;
+    double energia_antes = 0.0;
 
     if (forma_get_tipo(f) == FORMA_RETANGULO)
     {
-        if (forma_get_energia(f) < custo)
+        energia_antes = forma_get_energia(f);
+        if (energia_antes < custo)
         {
             if (txt != NULL)
                 fprintf(txt, "forma %d nao movida: energia insuficiente "
                              "(%.3f < %.3f)\n",
-                        q->i, forma_get_energia(f), custo);
+                        q->i, energia_antes, custo);
+
+            /* a trilha e desenhada mesmo sem movimento, com o 't' negativo */
+            if (anot != NULL)
+            {
+                char rotulo[64];
+                snprintf(rotulo, sizeof(rotulo), "mv t:%.2f, g:%.2f",
+                         energia_antes - custo, custo);
+                anotaTrilha(anot, x0, y0, x0 + q->dx, y0 + q->dy, rotulo, "1");
+            }
             return;
         }
-        forma_set_energia(f, forma_get_energia(f) - custo);
+        forma_set_energia(f, energia_antes - custo);
     }
 
     /* remove e reinsere para manter a arvore ordenada (X, area, Y) */
@@ -432,6 +475,18 @@ static void executaMv(ComandoQry *q, void *arvore, FILE *txt)
                 q->i, x0, y0, forma_get_x(f), forma_get_y(f));
         if (forma_get_tipo(f) == FORMA_RETANGULO)
             fprintf(txt, "custo de energia: %.3f\n", custo);
+    }
+
+    /* trilha: nas so ha gasto de energia; nas demais, tempo indeterminado */
+    if (anot != NULL)
+    {
+        char rotulo[64];
+        if (forma_get_tipo(f) == FORMA_RETANGULO)
+            snprintf(rotulo, sizeof(rotulo), "mv t:%.2f, g:%.2f",
+                     energia_antes, custo);
+        else
+            snprintf(rotulo, sizeof(rotulo), "mv t:inf, g:0.00");
+        anotaTrilha(anot, x0, y0, forma_get_x(f), forma_get_y(f), rotulo, "1");
     }
 }
 
@@ -459,6 +514,21 @@ static void executaLr(ComandoQry *q, void *arvore, FILE *txt, Lista *anot)
         AnotacaoSvg *a = novaAnotacao('o', cx, cy, 0, 0);
         if (a != NULL)
             lista_insere(anot, a);
+
+        /* a trilha e desenhada mesmo sem lancamento, ate onde a rede cairia */
+        if (anot != NULL)
+        {
+            char rotulo[64];
+            Regiao r;
+            double destinoX, destinoY;
+
+            regiaoDaRede(nau, q->lado, q->d, q->w, q->h, &r);
+            ancoraDaRede(&r, q->lado, &destinoX, &destinoY);
+            snprintf(rotulo, sizeof(rotulo), "lr (%.2f,%.2f)",
+                     energia_inicial, custo);
+            anotaTrilha(anot, forma_get_x(nau), forma_get_y(nau),
+                        destinoX, destinoY, rotulo, "1.5");
+        }
         return;
     }
 
@@ -504,6 +574,26 @@ static void executaLr(ComandoQry *q, void *arvore, FILE *txt, Lista *anot)
     if (txt != NULL)
         fprintf(txt, "energia antes: %.3f energia depois: %.3f\n",
                 energia_inicial, forma_get_energia(nau));
+
+    /* trilha: da ancora da nau ate a ancora da rede, com o custo rotulado */
+    if (anot != NULL)
+    {
+        char rotulo[64];
+        double destinoX, destinoY;
+
+        ancoraDaRede(&rede, q->lado, &destinoX, &destinoY);
+
+        /* rotulo no padrao do gabarito: (energia antes, energia consumida) */
+        snprintf(rotulo, sizeof(rotulo), "lr (%.2f,%.2f)",
+                 energia_inicial, custo);
+        anotaTrilha(anot, forma_get_x(nau), forma_get_y(nau),
+                    destinoX, destinoY, rotulo, "1.5");
+
+        /* a regiao da rede tambem vira um tracejado vermelho translucido */
+        AnotacaoSvg *d = novaAnotacao('D', rede.x1, rede.y1, rede.x2, rede.y2);
+        if (d != NULL)
+            lista_insere(anot, d);
+    }
 }
 
 static void executaD(ComandoQry *q, void *arvore, FILE *txt, Lista *anot)
@@ -571,20 +661,25 @@ static void executaD(ComandoQry *q, void *arvore, FILE *txt, Lista *anot)
 
     forma_set_energia(nau, energia_inicial - custo);
 
-    double px, py;
-    if (cc.menorId < 0)
-    {
-        px = cc.rx2;
-        py = cc.ry2;
-    }
-    else
-    {
-        px = cc.impactox;
-        py = cc.impactoy;
-    }
+    /* impacto sempre no alcance literal do tiro (canhao + d), bate na nau
+     * ou nao; o gabarito marca a estrela nesse ponto e o enunciado diz
+     * "a carga atinge a distancia d". deteccao (menorId) e independente. */
+    double px = cc.rx2, py = cc.ry2;
 
     if (txt != NULL)
         fprintf(txt, "ponto de impacto em (%.3f, %.3f)\n", px, py);
+
+    /* trilha do canhao ate o impacto + estrela no ponto de impacto */
+    if (anot != NULL)
+    {
+        char rotulo[64];
+        snprintf(rotulo, sizeof(rotulo), "d (%.2f %.2f)", energia_inicial, custo);
+        anotaTrilha(anot, cc.rx1, cc.ry1, px, py, rotulo, "1.5");
+
+        AnotacaoSvg *e = novaAnotacao('P', px, py, 0, 0);
+        if (e != NULL)
+            lista_insere(anot, e);
+    }
 
     if (cc.menorId >= 0)
     {
@@ -634,7 +729,6 @@ static void executaMc(ComandoQry *q, void *arvore, FILE *txt, Lista *anot)
     lista_percorre(cp.peixes, movePeixe, &cm);
 
     int n = lista_tamanho(cp.peixes);
-    lista_destroi(cp.peixes, NULL);
 
     if (txt != NULL)
         fprintf(txt, "peixes transladados: %d\n", n);
@@ -646,6 +740,24 @@ static void executaMc(ComandoQry *q, void *arvore, FILE *txt, Lista *anot)
                                      reg.x2 + q->dx, reg.y2 + q->dy);
     if (dest != NULL)
         lista_insere(anot, dest);
+
+    /* liga o canto de origem ao canto de destino */
+    if (anot != NULL)
+    {
+        if (n > 0)
+        {
+            anotaTrilha(anot, reg.x1, reg.y1,
+                        reg.x1 + q->dx, reg.y1 + q->dy, "mc", "1.5");
+        }
+        else
+        {
+            AnotacaoSvg *v = novaAnotacao('o', reg.x1, reg.y1, 0, 0);
+            if (v != NULL)
+                lista_insere(anot, v);
+        }
+    }
+
+    lista_destroi(cp.peixes, NULL);
 }
 
 /*
@@ -732,7 +844,7 @@ Lista *qry_processa(FILE *arq_qry, void *arvore, FILE *txt)
         if (strcmp(q->cmd, "e") == 0)
             executaE(q, arvore, txt);
         else if (strcmp(q->cmd, "mv") == 0)
-            executaMv(q, arvore, txt);
+            executaMv(q, arvore, txt, anotacoes);
         else if (strcmp(q->cmd, "lr") == 0)
             executaLr(q, arvore, txt, anotacoes);
         else if (strcmp(q->cmd, "d") == 0)
@@ -751,10 +863,26 @@ static void desenhaAnotacao(void *item, void *aux)
 {
     AnotacaoSvg *a = item;
     FILE *arq = aux;
-    if (a->tipo == 'R')
+
+    switch (a->tipo)
+    {
+    case 'R':
         svg_desenha_regiao(arq, a->x1, a->y1, a->x2, a->y2);
-    else
+        break;
+    case 'D':
+        svg_desenha_rede(arq, a->x1, a->y1, a->x2, a->y2);
+        break;
+    case 'T':
+        svg_desenha_trilha(arq, a->x1, a->y1, a->x2, a->y2, a->rotulo,
+                          a->tracejado);
+        break;
+    case 'P':
+        svg_desenha_estrela(arq, a->x1, a->y1);
+        break;
+    default:
         svg_desenha_marcador(arq, a->x1, a->y1, a->tipo);
+        break;
+    }
 }
 
 void qry_desenha_anotacoes(FILE *arq_svg, const Lista *anotacoes)
