@@ -3,15 +3,14 @@
 *.exe
 ted
 
-# Diretorio de saída gerado pelo 'make saida'
+# Diretorio de saida do programa
 output/
 
-# Editar .gitignore para NAO ignorar arquivos essenciais:
-# - LEIA-ME.txt (obrigatorio)
-# - README.md
-# - Arquivos .dot (entregaveis) na raiz
-
-# Arquivos de saida gerados pelo programa em output/ (ja cobertos acima)
+# Corpus de comparacao com o gabarito e scripts auxiliares
+t1/
+t1-gab/
+out-*/
+_*.py
 
 # Editor/OS
 .vscode/
