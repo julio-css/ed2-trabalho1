@@ -74,7 +74,7 @@ vermelha.o:   vermelha.c   vermelha.h forma.h
 geo.o:        geo.c        geo.h     forma.h vermelha.h
 	$(CC) -c $(CFLAGS) $(INC) $< -o $@
 
-qry.o:        qry.c        qry.h     geo.h vermelha.h svg.h txt.h
+qry.o:        qry.c        qry.h     geo.h vermelha.h svg.h
 	$(CC) -c $(CFLAGS) $(INC) $< -o $@
 
 svg.o:        svg.c        svg.h     forma.h
