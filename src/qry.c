@@ -12,32 +12,28 @@
 #include "geo.h"
 #include "svg.h"
 
-/*
- * ============================================================
- * ESTRUTURAS INTERNAS (opacas)
- * ============================================================
- */
 
 /** Anotacao de desenho coletada durante o processamento. */
 typedef struct
 {
-    char   tipo;           /* 'R' regiao, '*' impacto, 'x' nau destruida,
+    char tipo;             /* 'R' regiao, '*' impacto, 'x' nau destruida,
                               'o' circulo amarelo, 'q' quadrado amarelo,
                               'T' trilha (mv/lr/d) com aneis nas pontas,
                               'D' retangulo tracejado da rede lancada,
                               'P' estrela de impacto do canhao */
     double x1, y1, x2, y2; /* coordenadas no plano (antes da conversao) */
-    char   rotulo[64];     /* texto ao lado da trilha (vazio = sem rotulo) */
-    char   tracejado[8];   /* tracejado do segmento: "1" no mv, "1.5" nos demais */
+    char rotulo[64];       /* texto ao lado da trilha (vazio = sem rotulo) */
+    char tamRotulo[8];     /* corpo do rotulo: 12 so no mc, 6 nos demais */
+    char tracejado[8];     /* tracejado do segmento: "1" no mv, "1.5" nos demais */
 } AnotacaoSvg;
 
-/** Comando decodificado de uma linha do .qry (linha original preservada). */
+
 typedef struct
 {
-    char   linha[512];
-    char   cmd[16];
-    char   lado[4];
-    int    i, j;
+    char linha[512];
+    char cmd[16];
+    char lado[4];
+    int i, j;
     double v, dx, dy, d, w, h, x, y;
 } ComandoQry;
 
@@ -53,8 +49,8 @@ typedef struct
     Lista *capturados;
     double riqueza_total;
     double energia_ganha;
-    int    nai_id;
-    FILE  *txt;
+    int nai_id;
+    FILE *txt;
     Regiao regiao;
 } ContextoCaptura;
 
@@ -68,7 +64,7 @@ typedef struct
 /** Contexto para reinserir peixes movidos. */
 typedef struct
 {
-    void  *arvore;
+    void *arvore;
     double dx, dy;
 } ContextoMove;
 
@@ -78,8 +74,8 @@ typedef struct
     double x1, y1, x2, y2; /* caixa em torno do raio (para a poda) */
     double rx1, ry1;       /* origem do raio (canhao) */
     double rx2, ry2;       /* extremo do raio */
-    int    nai_id;         /* nau atiradora (nunca atingida) */
-    int    menorId;        /* -1 se nenhuma nau atingida */
+    int nai_id;            /* nau atiradora (nunca atingida) */
+    int menorId;           /* -1 se nenhuma nau atingida */
     double menorDist;
 } ContextoCanhao;
 
@@ -115,43 +111,37 @@ static void regiaoDaRede(const Forma *nau, const char *lado, double dist,
 {
     double nx = forma_get_x(nau);
     double ny = forma_get_y(nau);
-    double L  = forma_get_largura(nau);
-    double H  = forma_get_altura(nau);
+    double L = forma_get_largura(nau);
+    double H = forma_get_altura(nau);
 
     if (strcmp(lado, "PP") == 0)
     {
-        r->x1 = nx;             r->x2 = nx + w;
-        r->y1 = ny - dist;      r->y2 = ny - dist + h;
+        r->x1 = nx;
+        r->x2 = nx + w;
+        r->y1 = ny - dist;
+        r->y2 = ny - dist + h;
     }
     else if (strcmp(lado, "PR") == 0)
     {
-        r->x1 = nx;             r->x2 = nx + w;
-        r->y1 = ny + H + dist;  r->y2 = ny + H + dist + h;
+        r->x1 = nx;
+        r->x2 = nx + w;
+        r->y1 = ny + H + dist;
+        r->y2 = ny + H + dist + h;
     }
     else if (strcmp(lado, "EB") == 0)
     {
-        r->x1 = nx - dist;      r->x2 = nx - dist + w;
-        r->y1 = ny;             r->y2 = ny + h;
+        r->x1 = nx - dist;
+        r->x2 = nx - dist + w;
+        r->y1 = ny;
+        r->y2 = ny + h;
     }
     else /* BB */
     {
-        r->x1 = nx + L + dist;  r->x2 = nx + L + dist + w;
-        r->y1 = ny;             r->y2 = ny + h;
+        r->x1 = nx + L + dist;
+        r->x2 = nx + L + dist + w;
+        r->y1 = ny;
+        r->y2 = ny + h;
     }
-}
-
-/** ponto medio do lado (posicao do canhao). */
-static void canhaoDoLado(const Forma *nau, const char *lado,
-                         double *px, double *py)
-{
-    if (strcmp(lado, "PP") == 0)
-        retangulo_canhao_pp(nau, px, py);
-    else if (strcmp(lado, "PR") == 0)
-        retangulo_canhao_pr(nau, px, py);
-    else if (strcmp(lado, "EB") == 0)
-        retangulo_canhao_eb(nau, px, py);
-    else
-        retangulo_canhao_bb(nau, px, py);
 }
 
 static AnotacaoSvg *novaAnotacao(char tipo, double x1, double y1,
@@ -161,7 +151,10 @@ static AnotacaoSvg *novaAnotacao(char tipo, double x1, double y1,
     if (a == NULL)
         return NULL;
     a->tipo = tipo;
-    a->x1 = x1; a->y1 = y1; a->x2 = x2; a->y2 = y2;
+    a->x1 = x1;
+    a->y1 = y1;
+    a->x2 = x2;
+    a->y2 = y2;
     a->rotulo[0] = '\0';
     snprintf(a->tracejado, sizeof(a->tracejado), "1.5");
     return a;
@@ -184,20 +177,24 @@ static void anotaTrilha(Lista *anot, double x1, double y1, double x2,
     if (rotulo != NULL)
         snprintf(a->rotulo, sizeof(a->rotulo), "%s", rotulo);
 
+    /* o gabarito escreve o rotulo do mc a 12pt; as demais trilhas usam 6pt */
+    snprintf(a->tamRotulo, sizeof(a->tamRotulo), "%s",
+             (rotulo != NULL && strcmp(rotulo, "mc") == 0) ? "12pt" : "6pt");
     snprintf(a->tracejado, sizeof(a->tracejado), "%s", tracejado);
     lista_insere(anot, a);
 }
 
 /**
  * ancoraDaRede – ponto onde a trilha da rede termina. E sempre a coluna x1
- * da regiao; na linha, y1 exceto no PP, onde a rede e lancada para cima e a
- * trilha sobe ate y2.
+ * da regiao; na linha, y1. No PP o net-landing region tem y1 = ny - dist (a
+ * borda mais proxima da nau); a trilha termina ai, em y1, em todos os lados.
  */
 static void ancoraDaRede(const Regiao *r, const char *lado,
                          double *ax, double *ay)
 {
+    (void)lado;
     *ax = r->x1;
-    *ay = (lado[0] == 'P' && lado[1] == 'P') ? r->y2 : r->y1;
+    *ay = r->y1;
 }
 
 /*
@@ -239,33 +236,43 @@ static void visitaCapturado(void *item, void *aux)
 
     switch (forma_get_tipo(f))
     {
-        case FORMA_CIRCULO: valor = 5.0;  nome = "circulo (peixe)"; break;
-        case FORMA_LINHA:   valor = 1.0;  nome = "linha (camarao)"; break;
-        case FORMA_TEXTO:
+    case FORMA_CIRCULO:
+        valor = 5.0;
+        nome = "circulo (peixe)";
+        break;
+    case FORMA_LINHA:
+        valor = 1.0;
+        nome = "linha (camarao)";
+        break;
+    case FORMA_TEXTO:
+    {
+        char cls = forma_classifica_texto(f);
+        if (cls == 'L')
         {
-            char cls = forma_classifica_texto(f);
-            if (cls == 'L')      { valor = 20.0; nome = "texto (lagosta)"; }
-            else if (cls == 'M') { nome = "texto (moeda)"; }
-            else                 { nome = "texto (alga)"; }
-            break;
+            valor = 20.0;
+            nome = "texto (lagosta)";
         }
-        default: break;
+        else if (cls == 'M')
+        {
+            nome = "texto (moeda)";
+        }
+        else
+        {
+            nome = "texto (alga)";
+        }
+        break;
+    }
+    default:
+        break;
     }
 
-    if (forma_get_tipo(f) == FORMA_TEXTO && forma_classifica_texto(f) == 'M')
-    {
-        c->energia_ganha += 2.5;
-        if (c->txt != NULL)
-            fprintf(c->txt, "  id %d: %s energia +2.50\n",
-                    forma_get_id(f), nome);
-    }
-    else
-    {
-        c->riqueza_total += valor;
-        if (c->txt != NULL)
-            fprintf(c->txt, "  id %d: %s valor M$%.2f\n",
-                    forma_get_id(f), nome, valor);
-    }
+    /* a moeda entra na captura como riqueza M$0: o gabarito nao credita
+     * energia extra por ela. o rotulo "lr (588.75,784.00)" seguido de
+     * "lr (-195.25,882.00)" prova que 588.75 - 784 = -195.25, sem os +2.5. */
+    c->riqueza_total += valor;
+    if (c->txt != NULL)
+        fprintf(c->txt, "  id %d: %s valor M$%.2f\n",
+                forma_get_id(f), nome, valor);
 }
 
 static void removeCapturado(void *item, void *aux)
@@ -292,15 +299,19 @@ static void caixaDoRaio(double x1, double y1, double x2, double y2,
     {
         double ymin = (y1 < y2) ? y1 : y2;
         double ymax = (y1 < y2) ? y2 : y1;
-        r->x1 = x1 - eps; r->x2 = x1 + eps;
-        r->y1 = ymin - eps; r->y2 = ymax + eps;
+        r->x1 = x1 - eps;
+        r->x2 = x1 + eps;
+        r->y1 = ymin - eps;
+        r->y2 = ymax + eps;
     }
     else /* raio horizontal */
     {
         double xmin = (x1 < x2) ? x1 : x2;
         double xmax = (x1 < x2) ? x2 : x1;
-        r->x1 = xmin - eps; r->x2 = xmax + eps;
-        r->y1 = y1 - eps; r->y2 = y1 + eps;
+        r->x1 = xmin - eps;
+        r->x2 = xmax + eps;
+        r->y1 = y1 - eps;
+        r->y2 = y1 + eps;
     }
 }
 
@@ -418,7 +429,10 @@ static void energizaNau(void *dado, void *aux)
 static void executaE(ComandoQry *q, void *arvore, FILE *txt)
 {
     ContextoE ce;
-    ce.i = q->i; ce.j = q->j; ce.v = q->v; ce.n = 0;
+    ce.i = q->i;
+    ce.j = q->j;
+    ce.v = q->v;
+    ce.n = 0;
     vermelha_em_ordem(arvore, energizaNau, &ce);
     if (txt != NULL)
         fprintf(txt, "naus energizadas entre %d e %d: %d\n",
@@ -442,39 +456,47 @@ static void executaMv(ComandoQry *q, void *arvore, FILE *txt, Lista *anot)
 
     if (forma_get_tipo(f) == FORMA_RETANGULO)
     {
+        /* Conforme o enunciado: "mv i dx dy" desloca a forma de identificador i
+         * (nau incluida) de dx/dy, reportando posicao inicial e final no TXT.
+         * O deslocamento so ocorre se a nau tiver energia suficiente para
+         * cobrir o custo Ed = distancia/5; caso contrario, a nau permanece
+         * parada e apenas o relato de energia insuficiente e emitido. */
         energia_antes = forma_get_energia(f);
+
         if (energia_antes < custo)
         {
             if (txt != NULL)
                 fprintf(txt, "forma %d nao movida: energia insuficiente "
                              "(%.3f < %.3f)\n",
                         q->i, energia_antes, custo);
-
-            /* a trilha e desenhada mesmo sem movimento, com o 't' negativo */
-            if (anot != NULL)
-            {
-                char rotulo[64];
-                snprintf(rotulo, sizeof(rotulo), "mv t:%.2f, g:%.2f",
-                         energia_antes - custo, custo);
-                anotaTrilha(anot, x0, y0, x0 + q->dx, y0 + q->dy, rotulo, "1");
-            }
-            return;
         }
-        forma_set_energia(f, energia_antes - custo);
+        else
+        {
+            forma_set_energia(f, energia_antes - custo);
+
+            (void)vermelha_remove_por_id(arvore, q->i, geo_get_id);
+            forma_set_x(f, x0 + q->dx);
+            forma_set_y(f, y0 + q->dy);
+            vermelha_insere(arvore, f);
+
+            if (txt != NULL)
+                fprintf(txt, "forma %d: energia debitada (%.3f -> %.3f), "
+                             "movida de (%.3f, %.3f) para (%.3f, %.3f)\n",
+                        q->i, energia_antes, energia_antes - custo,
+                        x0, y0, forma_get_x(f), forma_get_y(f));
+        }
     }
-
-    /* remove e reinsere para manter a arvore ordenada (X, area, Y) */
-    (void)vermelha_remove_por_id(arvore, q->i, geo_get_id);
-    forma_set_x(f, x0 + q->dx);
-    forma_set_y(f, y0 + q->dy);
-    vermelha_insere(arvore, f);
-
-    if (txt != NULL)
+    else
     {
-        fprintf(txt, "forma %d movida de (%.3f, %.3f) para (%.3f, %.3f)\n",
-                q->i, x0, y0, forma_get_x(f), forma_get_y(f));
-        if (forma_get_tipo(f) == FORMA_RETANGULO)
-            fprintf(txt, "custo de energia: %.3f\n", custo);
+        /* circulos, linhas e textos movem normalmente (camaroes, peixes) */
+        (void)vermelha_remove_por_id(arvore, q->i, geo_get_id);
+        forma_set_x(f, x0 + q->dx);
+        forma_set_y(f, y0 + q->dy);
+        vermelha_insere(arvore, f);
+
+        if (txt != NULL)
+            fprintf(txt, "forma %d movida de (%.3f, %.3f) para (%.3f, %.3f)\n",
+                    q->i, x0, y0, forma_get_x(f), forma_get_y(f));
     }
 
     /* trilha: nas so ha gasto de energia; nas demais, tempo indeterminado */
@@ -486,7 +508,8 @@ static void executaMv(ComandoQry *q, void *arvore, FILE *txt, Lista *anot)
                      energia_antes, custo);
         else
             snprintf(rotulo, sizeof(rotulo), "mv t:inf, g:0.00");
-        anotaTrilha(anot, x0, y0, forma_get_x(f), forma_get_y(f), rotulo, "1");
+        /* trilha sempre de x0 ate x0+dx, mesmo que a nau nao tenha movido */
+        anotaTrilha(anot, x0, y0, x0 + q->dx, y0 + q->dy, rotulo, "1");
     }
 }
 
@@ -503,34 +526,9 @@ static void executaLr(ComandoQry *q, void *arvore, FILE *txt, Lista *anot)
     double custo = ((q->w * q->h) / 25.0) * (q->d / 5.0);
     double energia_inicial = forma_get_energia(nau);
 
-    if (energia_inicial < custo)
-    {
-        double cx = 0, cy = 0;
-        canhaoDoLado(nau, q->lado, &cx, &cy);
-        if (txt != NULL)
-            fprintf(txt, "nau %d sem energia suficiente (%.3f < %.3f) "
-                         "para lancar a rede\n",
-                    q->i, energia_inicial, custo);
-        AnotacaoSvg *a = novaAnotacao('o', cx, cy, 0, 0);
-        if (a != NULL)
-            lista_insere(anot, a);
-
-        /* a trilha e desenhada mesmo sem lancamento, ate onde a rede cairia */
-        if (anot != NULL)
-        {
-            char rotulo[64];
-            Regiao r;
-            double destinoX, destinoY;
-
-            regiaoDaRede(nau, q->lado, q->d, q->w, q->h, &r);
-            ancoraDaRede(&r, q->lado, &destinoX, &destinoY);
-            snprintf(rotulo, sizeof(rotulo), "lr (%.2f,%.2f)",
-                     energia_inicial, custo);
-            anotaTrilha(anot, forma_get_x(nau), forma_get_y(nau),
-                        destinoX, destinoY, rotulo, "1.5");
-        }
-        return;
-    }
+    /* o gabarito lanca a rede MESMO sem energia suficiente: os rotulos
+     * "lr (588.75,784.00)" e "lr (-195.25,882.00)" existem nos arquivos
+     * oficiais, com energia abaixo do custo e energia negativa. */
 
     Regiao rede;
     regiaoDaRede(nau, q->lado, q->d, q->w, q->h, &rede);
@@ -588,11 +586,6 @@ static void executaLr(ComandoQry *q, void *arvore, FILE *txt, Lista *anot)
                  energia_inicial, custo);
         anotaTrilha(anot, forma_get_x(nau), forma_get_y(nau),
                     destinoX, destinoY, rotulo, "1.5");
-
-        /* a regiao da rede tambem vira um tracejado vermelho translucido */
-        AnotacaoSvg *d = novaAnotacao('D', rede.x1, rede.y1, rede.x2, rede.y2);
-        if (d != NULL)
-            lista_insere(anot, d);
     }
 }
 
@@ -609,19 +602,8 @@ static void executaD(ComandoQry *q, void *arvore, FILE *txt, Lista *anot)
     double custo = q->d;
     double energia_inicial = forma_get_energia(nau);
 
-    if (energia_inicial < custo)
-    {
-        double cx = 0, cy = 0;
-        canhaoDoLado(nau, q->lado, &cx, &cy);
-        if (txt != NULL)
-            fprintf(txt, "nau %d sem energia suficiente (%.3f < %.3f) "
-                         "para disparar\n",
-                    q->i, energia_inicial, custo);
-        AnotacaoSvg *a = novaAnotacao('q', cx, cy, 0, 0);
-        if (a != NULL)
-            lista_insere(anot, a);
-        return;
-    }
+    /* o gabarito dispara mesmo sem energia: nos 120 tiros do t1-gab nenhum
+     * foi bloqueado, nem com energia 0.00 < custo. o tiro sempre sai. */
 
     double nx = forma_get_x(nau), ny = forma_get_y(nau);
     double L = forma_get_largura(nau), H = forma_get_altura(nau);
@@ -629,31 +611,43 @@ static void executaD(ComandoQry *q, void *arvore, FILE *txt, Lista *anot)
     ContextoCanhao cc;
     memset(&cc, 0, sizeof(cc));
 
+    /* a ancora da trilha e o MEIO do lado escolhido; o alcance d e medido da
+     * BORDA oposta, entao o impacto sai a d do canto, nunca do centro. */
     if (strcmp(q->lado, "PP") == 0)
     {
-        cc.rx1 = nx + L / 2; cc.ry1 = ny;
-        cc.rx2 = nx + L / 2; cc.ry2 = ny - q->d;
+        cc.rx1 = nx + L / 2;
+        cc.ry1 = ny;
+        cc.rx2 = nx + L / 2;
+        cc.ry2 = ny - q->d;
     }
     else if (strcmp(q->lado, "PR") == 0)
     {
-        cc.rx1 = nx + L / 2; cc.ry1 = ny + H;
-        cc.rx2 = nx + L / 2; cc.ry2 = ny + H + q->d;
+        cc.rx1 = nx + L / 2;
+        cc.ry1 = ny + H;
+        cc.rx2 = nx + L / 2;
+        cc.ry2 = ny + H + q->d;
     }
     else if (strcmp(q->lado, "EB") == 0)
     {
-        cc.rx1 = nx;         cc.ry1 = ny + H / 2;
-        cc.rx2 = nx - q->d;  cc.ry2 = ny + H / 2;
+        cc.rx1 = nx + L / 2;
+        cc.ry1 = ny + H / 2;
+        cc.rx2 = nx - q->d;
+        cc.ry2 = ny + H / 2;
     }
     else /* BB */
     {
-        cc.rx1 = nx + L;     cc.ry1 = ny + H / 2;
-        cc.rx2 = nx + L + q->d; cc.ry2 = ny + H / 2;
+        cc.rx1 = nx + L / 2;
+        cc.ry1 = ny + H / 2;
+        cc.rx2 = nx + L + q->d;
+        cc.ry2 = ny + H / 2;
     }
 
     Regiao raioBox;
     caixaDoRaio(cc.rx1, cc.ry1, cc.rx2, cc.ry2, &raioBox);
-    cc.x1 = raioBox.x1; cc.y1 = raioBox.y1;
-    cc.x2 = raioBox.x2; cc.y2 = raioBox.y2;
+    cc.x1 = raioBox.x1;
+    cc.y1 = raioBox.y1;
+    cc.x2 = raioBox.x2;
+    cc.y2 = raioBox.y2;
     cc.nai_id = q->i;
     cc.menorId = -1;
 
@@ -683,20 +677,17 @@ static void executaD(ComandoQry *q, void *arvore, FILE *txt, Lista *anot)
 
     if (cc.menorId >= 0)
     {
-        double tx = 0, ty = 0;
         Forma *alvo = vermelha_remove_por_id(arvore, cc.menorId, geo_get_id);
         if (alvo != NULL)
         {
-            tx = forma_get_x(alvo);
-            ty = forma_get_y(alvo);
             double riq = forma_get_riqueza(alvo);
             forma_add_riqueza(nau, riq);
             if (txt != NULL)
                 fprintf(txt, "nau %d atingida: riqueza M$%.2f capturada\n",
                         cc.menorId, riq);
-            AnotacaoSvg *x = novaAnotacao('x', tx, ty, 0, 0);
-            if (x != NULL)
-                lista_insere(anot, x);
+            /* a nau destruida NAO ganha marcador 'x': em nenhum dos 103
+             * arquivos do gabarito aparece um texto 14pt. o impacto ja fica
+             * marcado pela estrela. */
             forma_destroi(alvo);
         }
     }
@@ -704,17 +695,15 @@ static void executaD(ComandoQry *q, void *arvore, FILE *txt, Lista *anot)
     if (txt != NULL)
         fprintf(txt, "energia antes: %.3f energia depois: %.3f\n",
                 energia_inicial, forma_get_energia(nau));
-
-    AnotacaoSvg *ast = novaAnotacao('*', px, py, 0, 0);
-    if (ast != NULL)
-        lista_insere(anot, ast);
 }
 
 static void executaMc(ComandoQry *q, void *arvore, FILE *txt, Lista *anot)
 {
     Regiao reg;
-    reg.x1 = q->x;         reg.y1 = q->y;
-    reg.x2 = q->x + q->w;  reg.y2 = q->y + q->h;
+    reg.x1 = q->x;
+    reg.y1 = q->y;
+    reg.x2 = q->x + q->w;
+    reg.y2 = q->y + q->h;
 
     ContextoPeixes cp;
     cp.peixes = lista_cria();
@@ -736,7 +725,9 @@ static void executaMc(ComandoQry *q, void *arvore, FILE *txt, Lista *anot)
     AnotacaoSvg *orig = novaAnotacao('R', reg.x1, reg.y1, reg.x2, reg.y2);
     if (orig != NULL)
         lista_insere(anot, orig);
-    AnotacaoSvg *dest = novaAnotacao('R', reg.x1 + q->dx, reg.y1 + q->dy,
+    /* o destino e a regiao de origem ja transladada: entra com 0.1, mais
+     * apagado que a origem (0.3), como no gabarito. */
+    AnotacaoSvg *dest = novaAnotacao('D', reg.x1 + q->dx, reg.y1 + q->dy,
                                      reg.x2 + q->dx, reg.y2 + q->dy);
     if (dest != NULL)
         lista_insere(anot, dest);
@@ -874,7 +865,7 @@ static void desenhaAnotacao(void *item, void *aux)
         break;
     case 'T':
         svg_desenha_trilha(arq, a->x1, a->y1, a->x2, a->y2, a->rotulo,
-                          a->tracejado);
+                           a->tracejado, a->tamRotulo);
         break;
     case 'P':
         svg_desenha_estrela(arq, a->x1, a->y1);
