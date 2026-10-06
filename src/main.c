@@ -148,6 +148,26 @@ int main(int argc, char *argv[])
         }
         soNome(arq_qry, base_qry, sizeof(base_qry));
 
+        /* base-baseqry.svg: a camada de formas e a do estado INICIAL, como
+         * no gabarito; as consultas so acrescentam anotacoes por cima. Por
+         * isso a figura e desenhada num arquivo temporario ANTES de
+         * qry_processa, que move, pinta e destroi formas. O cabecalho (com o
+         * tamanho do canvas) so e escrito no fim, quando a arvore ja esta no
+         * estado final: e o gabarito que congela as formas mas ainda amplia
+         * a tela para caber o resultado das consultas. */
+        char nome_svg[1100];
+        snprintf(nome_svg, sizeof(nome_svg), "%s-%s.svg", base, base_qry);
+
+        char nome_tmp[1100];
+        /* caminho_saida devolve um buffer estatico: o nome final precisa ser
+         * copiado agora, antes que a proxima chamada sobrescreva. */
+        char sNome[1100];
+        snprintf(sNome, sizeof(sNome), "%s", caminho_saida(nome_svg));
+        snprintf(nome_tmp, sizeof(nome_tmp), "%s.tmp", sNome);
+        FILE *sq = fopen(nome_tmp, "w");
+        if (sq != NULL)
+            svg_desenha_tudo(sq, arvore);   /* sem cabecalho: entra depois */
+
         /* base-baseqry.txt: resultados das consultas + contabilidade final */
         {
             char nome_txt[1100];
@@ -162,21 +182,30 @@ int main(int argc, char *argv[])
         }
         fclose(qry);
 
-        /* base-baseqry.svg: estado final + contornos de energia + anotacoes */
+        /* anotacoes por cima da figura congelada */
+        if (sq != NULL)
         {
-            char nome_svg[1100];
-            snprintf(nome_svg, sizeof(nome_svg), "%s-%s.svg", base, base_qry);
-            FILE *sq = fopen(caminho_saida(nome_svg), "w");
-            if (sq != NULL)
+            double larg, alt;
+            svg_calcula_dimensoes(arvore, &larg, &alt);
+            qry_desenha_anotacoes(sq, anotacoes);
+            fclose(sq);
+
+            /* remonta o arquivo final: cabecalho no estado final + corpo congelado */
+            FILE *rd = fopen(nome_tmp, "r");
+            FILE *fin = fopen(sNome, "w");
+            if (rd != NULL && fin != NULL)
             {
-                double larg, alt;
-                svg_calcula_dimensoes(arvore, &larg, &alt);
-                svg_abre(sq, larg, alt);
-                svg_desenha_final(sq, arvore);
-                qry_desenha_anotacoes(sq, anotacoes);
-                svg_fecha(sq);
-                fclose(sq);
+                svg_abre(fin, larg, alt);
+                int ch;
+                while ((ch = fgetc(rd)) != EOF)
+                    fputc(ch, fin);
+                svg_fecha(fin);
             }
+            if (rd != NULL)
+                fclose(rd);
+            if (fin != NULL)
+                fclose(fin);
+            remove(nome_tmp);
         }
     }
 

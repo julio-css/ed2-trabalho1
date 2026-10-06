@@ -161,9 +161,9 @@ void test_lr_captura_valores_e_remove(void)
     TEST_ASSERT_EQUAL_INT(1, vermelha_tamanho(arvore));
     Forma *nau = busca(1);
     TEST_ASSERT_NOT_NULL(nau);
-    /* custo = (20*20)/25 * (10/5) = 16 * 2 = 32;
-       energia = 100 - 32 + 2.5 (moeda) = 70.5 */
-    TEST_ASSERT_DOUBLE_WITHIN(1e-6, 70.5, forma_get_energia(nau));
+    /* custo = (20*20)/25 * (10/5) = 16 * 2 = 32; a moeda vale M$0 e nao
+       credita energia, como no gabarito: energia = 100 - 32 = 68 */
+    TEST_ASSERT_DOUBLE_WITHIN(1e-6, 68.0, forma_get_energia(nau));
     /* riqueza = 20 (lagosta) + 5 (peixe) = 25 */
     TEST_ASSERT_DOUBLE_WITHIN(1e-6, 25.0, forma_get_riqueza(nau));
     TEST_ASSERT_NULL(busca(2));
@@ -172,17 +172,19 @@ void test_lr_captura_valores_e_remove(void)
     TEST_ASSERT_NULL(busca(5));
 }
 
-void test_lr_sem_energia_nao_lanca(void)
+void test_lr_sem_energia_lanca_com_energia_negativa(void)
 {
     carregaGeo(
         "r 1 0 0 100 50 black white\n"
         "c 2 5 -20 3 red blue\n");
-    Lista *anot = rodaQry("lr 1 PP 10 20 20\n"); /* energia 0 */
+    /* o gabarito lanca a rede sem energia: os rotulos "lr (588.75,784.00)" e
+     * "lr (-195.25,882.00)" existem nos arquivos oficiais. */
+    Lista *anot = rodaQry("lr 1 PP 10 20 20\n"); /* energia 0, custo 32 */
     if (anot != NULL)
         qry_libera_anotacoes(anot);
 
     TEST_ASSERT_EQUAL_INT(2, vermelha_tamanho(arvore)); /* nada capturado */
-    TEST_ASSERT_DOUBLE_WITHIN(1e-9, 0.0, forma_get_energia(busca(1)));
+    TEST_ASSERT_DOUBLE_WITHIN(1e-9, -32.0, forma_get_energia(busca(1)));
 }
 
 /* ---------- d: canhao ---------- */
@@ -297,10 +299,11 @@ void test_txt_registra_consultas(void)
 void test_anotacoes_geradas(void)
 {
     carregaGeo("r 1 0 0 50 50 black white\n");
-    /* canhao sem energia -> quadrado amarelo (1 anotacao) */
+    /* o gabarito dispara mesmo sem energia e nao marca tiro sem carga:
+     * a trilha e a estrela do impacto, 2 anotacoes. */
     Lista *anot = rodaQry("d 1 PR 60\n");
     TEST_ASSERT_NOT_NULL(anot);
-    TEST_ASSERT_EQUAL_INT(1, lista_tamanho(anot));
+    TEST_ASSERT_EQUAL_INT(2, lista_tamanho(anot));
     qry_libera_anotacoes(anot);
 }
 
@@ -313,7 +316,7 @@ int main(void)
     RUN_TEST(test_mv_nau_gasta_energia_e_ordem_da_fila);
     RUN_TEST(test_mv_sem_energia_nao_move);
     RUN_TEST(test_lr_captura_valores_e_remove);
-    RUN_TEST(test_lr_sem_energia_nao_lanca);
+    RUN_TEST(test_lr_sem_energia_lanca_com_energia_negativa);
     RUN_TEST(test_d_destroi_alvo_e_captura_riqueza);
     RUN_TEST(test_d_energia_exata_dispara);
     RUN_TEST(test_d_sem_alvo_so_gasta_energia);

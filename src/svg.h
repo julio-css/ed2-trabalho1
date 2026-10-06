@@ -56,12 +56,6 @@ void svg_desenha_forma(FILE *arq, const Forma *f);
 void svg_desenha_tudo(FILE *arq, void *arvore);
 
 /**
- * @brief Desenha as formas restantes no SVG final, aplicando as cores
- *        de contorno das naus conforme o nivel final de energia.
- */
-void svg_desenha_final(FILE *arq, void *arvore);
-
-/**
  * @brief Desenha um retangulo com bordas tracejadas (regiao da rede,
  *        regioes de origem/destino de mc).
  *
@@ -93,7 +87,8 @@ void svg_desenha_marcador(FILE *arq, double x, double y, char tipo);
  * @param tracejado  padrao do tracejado: o 'mv' usa "1", os demais "1.5".
  */
 void svg_desenha_trilha(FILE *arq, double x1, double y1, double x2, double y2,
-                        const char *rotulo, const char *tracejado);
+                        const char *rotulo, const char *tracejado,
+                        const char *tamRotulo);
 
 /**
  * @brief Desenha a estrela de 12 pontas no ponto de impacto do canhao.

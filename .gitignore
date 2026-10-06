@@ -24,6 +24,10 @@ Thumbs.db
 # Temporarios gerados por testes / depuração
 src/dbg_*.dot
 tmp_*
+_lixo/
+
+# Script de validacao do gabarito (corpus t1) e arquivos-lixo
+check_t1.py
 
 # Enunciado (PDF) — nao parte do codigo
 *.pdf
